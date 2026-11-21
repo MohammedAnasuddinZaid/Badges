@@ -1,0 +1,12 @@
+# Never commit real credentials
+config.json
+token
+*.pid
+logs/
+captures/
+__pycache__/
+*.pyc
+
+# Local environment
+.env
+*.log
