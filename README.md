@@ -66,6 +66,6 @@ GitHub shows these automatically on a profile **only after they are genuinely ea
 
 ## About this repo
 
-This repo contains only documentation/badge markdown. Pushing code to a repository does **not** unlock GitHub achievements — those require merged PRs, stars, accepted answers, sponsorships, etc.
+This repo contains the badges/achievements documentation plus a sanitized copy of the **Jarvis** assistant code in [`jarvis/`](jarvis/). Pushing code to a repository does **not** unlock GitHub achievements — those require merged PRs, stars, accepted answers, sponsorships, etc.
 
-> ⚠️ Do **not** commit `.jarvis/config.json` or `.jarvis/token`. They contain live API keys and an email app password.
+> ⚠️ Do **not** commit real `config.json` or `token` files. Use `jarvis/config.example.json` as a template — live API keys and an email app password must stay local.

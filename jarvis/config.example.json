@@ -1,0 +1,14 @@
+{
+  "name": "Anas",
+  "model": "openai/gpt-oss-120b",
+  "fallback_model": "openai/gpt-oss-20b",
+  "groq_api_key": "YOUR_GROQ_API_KEY",
+  "gemini_api_key": "YOUR_GEMINI_API_KEY",
+  "voice": false,
+  "persona": "",
+  "email_address": "you@example.com",
+  "email_app_password": "YOUR_16_CHAR_GMAIL_APP_PASSWORD",
+  "imap_host": "imap.gmail.com",
+  "smtp_host": "smtp.gmail.com",
+  "voice_profile": "bolt"
+}

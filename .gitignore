@@ -1,12 +1,39 @@
-# Never commit real credentials
+# Secrets and local runtime state
 config.json
 token
+jarvis/token
+jarvis/config.json
+
+# Runtime data / caches / logs
 *.pid
+*.log
 logs/
 captures/
+cache/
 __pycache__/
 *.pyc
-
-# Local environment
 .env
-*.log
+
+# Local assistant memory and reports (may contain personal data)
+memory.json
+notes.json
+knowledge.jsonl
+conversations.jsonl
+tech_news.json
+history.json
+expenses.json
+shopping.json
+todos.json
+selftest_report.json
+smoke_report.json
+jarvis/memory.json
+jarvis/notes.json
+jarvis/knowledge.jsonl
+jarvis/conversations.jsonl
+jarvis/tech_news.json
+jarvis/history.json
+jarvis/expenses.json
+jarvis/shopping.json
+jarvis/todos.json
+jarvis/selftest_report.json
+jarvis/smoke_report.json

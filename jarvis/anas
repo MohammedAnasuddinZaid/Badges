@@ -1,0 +1,282 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# anas - Anas's personal command center
+# Usage: anas jarvis [start|ask|status|serve|stop|restart|log|help]
+
+JARVIS_DIR="$HOME/.jarvis"
+JARVIS_PY="$JARVIS_DIR/jarvis.py"
+JARVISD_PY="$JARVIS_DIR/jarvisd.py"
+JARVIS_PID="$JARVIS_DIR/jarvisd.pid"
+JARVIS_PORT=21340
+JARVIS_URL="http://127.0.0.1:$JARVIS_PORT"
+
+have_python() {
+  command -v python >/dev/null 2>&1
+}
+
+jarvis_usage() {
+  cat <<'EOF'
+anas jarvis              ONE COMMAND: Jarvis OS, everything active
+anas jarvis chat         typed chat only (legacy mode)
+anas jarvis ask "..."    ask one question and exit
+anas jarvis voice        Jarvis OS hands-free (same as anas jarvis)
+anas jarvis boot-install start Jarvis OS automatically after reboot
+anas jarvis bolt-voice   switch to the fast, deep BOLT voice now
+anas jarvis voice-profile <jarvis|bolt|deep|fast>
+anas jarvis smoke        invoke every tool with stubbed I/O (no real actions)
+anas jarvis voicechat    hands-free: listen -> answer -> speak loop
+anas jarvis autopilot    voice OS: wake lock + briefing + always-on ears
+anas jarvis ears         always-on voice; say "Jarvis, ..." to wake it
+anas jarvis ears-stop    stop a running always-on listener
+anas jarvis see [q]      screenshot + vision: understand the whole screen
+anas jarvis camera [q]   camera photo + vision
+anas jarvis capabilities show real phone/voice/vision capability
+anas jarvis listen       listen once, answer, speak, exit
+anas jarvis speak "..."  just speak the text
+anas jarvis play "song"  start playing a song on YouTube now
+anas jarvis pause       pause current media
+anas jarvis resume      resume current media
+anas jarvis next        next track
+anas jarvis news        latest tech news
+anas jarvis briefing    battery + weather + tech news + unread mail
+anas jarvis mail        recent inbox mail
+anas jarvis mail-setup <address> <app-password>
+anas jarvis image <file> [question]
+anas jarvis ask-file <file> <question>
+anas jarvis ingest <file|folder>
+anas jarvis remind <minutes> <text>
+anas jarvis set <key> <value>   change a setting, e.g. city Mumbai
+anas jarvis config       show settings (secrets hidden)
+anas jarvis doctor       quick check: tools, permissions, internet, email
+anas jarvis selftest     full verification report (calls/SMS/mail are dry-run)
+anas jarvis status       show model, battery, daemon
+anas jarvis serve        keep Jarvis alive in the background
+anas jarvis stop         stop the background daemon
+anas jarvis restart      restart the daemon
+anas jarvis log          show the daemon log
+anas help                this help
+EOF
+}
+
+daemon_alive() {
+  if [ -f "$JARVIS_PID" ]; then
+    pid=$(cat "$JARVIS_PID" 2>/dev/null)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+health() {
+  curl -s -m 3 "$JARVIS_URL/health" 2>/dev/null
+}
+
+start_daemon() {
+  if daemon_alive && [ -n "$(health)" ]; then
+    echo "Jarvis daemon is already running (pid $(cat "$JARVIS_PID"))."
+    return 0
+  fi
+  if [ ! -f "$JARVISD_PY" ]; then
+    echo "Jarvis is not installed. Run the installer first."
+    return 1
+  fi
+  mkdir -p "$JARVIS_DIR/logs"
+  termux-wake-lock 2>/dev/null
+  nohup python "$JARVISD_PY" >> "$JARVIS_DIR/logs/daemon.log" 2>&1 &
+  pid=$!
+  echo "$pid" > "$JARVIS_PID"
+  sleep 2
+  if [ -n "$(health)" ]; then
+    echo "Jarvis is alive on $JARVIS_URL (pid $pid)."
+    echo "Wake lock held - Termux will keep running in the background."
+    return 0
+  fi
+  echo "Daemon failed to start. Recent log:"
+  tail -n 15 "$JARVIS_DIR/logs/daemon.log" 2>/dev/null
+  return 1
+}
+
+stop_daemon() {
+  if daemon_alive; then
+    pid=$(cat "$JARVIS_PID")
+    kill "$pid" 2>/dev/null
+    sleep 1
+    kill -9 "$pid" 2>/dev/null
+    echo "Stopped Jarvis daemon (pid $pid)."
+  else
+    echo "Jarvis daemon is not running."
+  fi
+  rm -f "$JARVIS_PID"
+  termux-wake-unlock 2>/dev/null
+}
+
+if ! have_python; then
+  echo "Python is missing in Termux. Install it with: pkg install python"
+  exit 1
+fi
+
+cmd="${1:-help}"
+[ $# -gt 0 ] && shift
+
+case "$cmd" in
+  jarvis)
+    sub="${1:-start}"
+    [ $# -gt 0 ] && shift
+    case "$sub" in
+      start|"")
+        exec python "$JARVIS_PY" --omni "$@"
+        ;;
+      chat)
+        exec python "$JARVIS_PY" --chat "$@"
+        ;;
+      voice)
+        exec python "$JARVIS_PY" --omni "$@"
+        ;;
+      boot|boot-install|autostart)
+        exec python "$JARVIS_PY" --boot-install
+        ;;
+      bolt-voice|bolt)
+        exec python "$JARVIS_PY" --bolt-voice
+        ;;
+      voice-profile|voiceprofile)
+        exec python "$JARVIS_PY" --voice-profile "$@"
+        ;;
+      smoke|smoke-test|test-all)
+        exec python "$JARVIS_PY" --smoke
+        ;;
+      voicechat|talk|converse)
+        exec python "$JARVIS_PY" --voicechat
+        ;;
+      autopilot|voice-os|voiceos)
+        exec python "$JARVIS_PY" --autopilot
+        ;;
+      ears|always-listen|wake)
+        exec python "$JARVIS_PY" --ears
+        ;;
+      ears-stop|ears-off|stop-ears)
+        : > "$JARVIS_DIR/stop_ears"
+        echo "Ears will stop after the current phrase."
+        ;;
+      see|see-screen|screen)
+        exec python "$JARVIS_PY" --see-screen "$@"
+        ;;
+      camera|look-around)
+        exec python "$JARVIS_PY" --camera "$@"
+        ;;
+      capabilities|caps|phone-capabilities)
+        exec python "$JARVIS_PY" --capabilities
+        ;;
+      listen)
+        exec python "$JARVIS_PY" --listen
+        ;;
+      speak)
+        if [ $# -eq 0 ]; then
+          echo 'Usage: anas jarvis speak "text"'
+          exit 1
+        fi
+        exec python "$JARVIS_PY" --speak "$*"
+        ;;
+      play)
+        if [ $# -eq 0 ]; then
+          echo 'Usage: anas jarvis play "song name"'
+          exit 1
+        fi
+        exec python "$JARVIS_PY" --play "$*"
+        ;;
+      pause|resume|next|previous)
+        exec python "$JARVIS_PY" --media "$sub"
+        ;;
+      news|technews|tech)
+        exec python "$JARVIS_PY" --technews
+        ;;
+      briefing|brief)
+        exec python "$JARVIS_PY" --briefing "$@"
+        ;;
+      mail|inbox)
+        exec python "$JARVIS_PY" --mail
+        ;;
+      mail-setup|mailsetup)
+        exec python "$JARVIS_PY" --mailsetup "$@"
+        ;;
+      image|look)
+        exec python "$JARVIS_PY" --image "$@"
+        ;;
+      ask-file|askfile|file)
+        exec python "$JARVIS_PY" --askfile "$@"
+        ;;
+      ingest|learn-file)
+        exec python "$JARVIS_PY" --ingest "$*"
+        ;;
+      remind|reminder)
+        exec python "$JARVIS_PY" --remind "$@"
+        ;;
+      set)
+        exec python "$JARVIS_PY" --set "$@"
+        ;;
+      config|settings)
+        exec python "$JARVIS_PY" --config
+        ;;
+      ask)
+        if [ $# -eq 0 ]; then
+          echo 'Usage: anas jarvis ask "your question"'
+          exit 1
+        fi
+        debug=""; yes=""; rest=()
+        for a in "$@"; do
+          case "$a" in
+            --debug) debug="--debug" ;;
+            --yes)   yes="--yes" ;;
+            *)       rest+=("$a") ;;
+          esac
+        done
+        if [ ${#rest[@]} -eq 0 ]; then
+          echo 'Usage: anas jarvis ask "your question"'
+          exit 1
+        fi
+        exec python "$JARVIS_PY" $debug $yes --ask "${rest[@]}"
+        ;;
+      doctor|check)
+        exec python "$JARVIS_PY" --doctor
+        ;;
+      selftest|verify|check-all)
+        exec python "$JARVIS_DIR/selftest.py" "$@"
+        ;;
+      status)
+        exec python "$JARVIS_PY" --status
+        ;;
+      serve|daemon|start-daemon)
+        start_daemon
+        ;;
+      stop)
+        stop_daemon
+        ;;
+      restart)
+        stop_daemon
+        start_daemon
+        ;;
+      log|logs)
+        tail -n 40 "$JARVIS_DIR/logs/daemon.log" 2>/dev/null || echo "No log yet."
+        ;;
+      help|-h|--help)
+        jarvis_usage
+        ;;
+      *)
+        echo "Unknown jarvis command: $sub"
+        echo
+        jarvis_usage
+        exit 1
+        ;;
+    esac
+    ;;
+  help|-h|--help|"")
+    echo "anas - personal command center"
+    echo
+    jarvis_usage
+    ;;
+  *)
+    echo "Unknown command: $cmd"
+    echo
+    jarvis_usage
+    exit 1
+    ;;
+esac
